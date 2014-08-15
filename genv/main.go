@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	//	"os/exec"
+	"sort"
 	"strings"
 )
 
@@ -16,6 +17,8 @@ func cli_err(msg string) {
 
 type SymTab map[string]string
 
+// this has a potential data race, accessing the env map from a goroutine.
+// right now, only one goroutine accesses it, so it's not an issue.
 func define(defsIn <-chan string, env SymTab) {
 	for def := range defsIn {
 		kv := strings.Split(def, "=")
@@ -76,13 +79,20 @@ func main() {
 	close(defsChan)
 
 	// list or exec
-	if len(args) == 0 {
-		// null case: print environment
-		for k, v := range env {
-			fmt.Printf("%s=%s\n", k, v)
+	if len(args) == 0 { // null case: print environment
+		// grab a slice of sorted keys so we can print sorted
+		names := make([]string, len(env))
+		i := 0
+		for n := range env {
+			names[i] = n
+			i++
 		}
-	} else {
-		// remaining args: exec util with any args
+		sort.Strings(names)
+		for _, n := range names {
+			fmt.Printf("%s=%s\n", n, env[n])
+		}
+	} else { // remaining args: exec util with any args
+
 		// TODO
 	}
 }
