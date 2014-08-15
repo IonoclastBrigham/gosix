@@ -1,3 +1,16 @@
+// main.cpp
+// gcut main package
+//
+// Copyright © 2014 Brigham Toskin
+// This software is part of the GOSIX source distribution. It is distributable
+// under the terms of a modified MIT License. You should have received a copy of
+// the license in the file LICENSE. If not, see:
+// <http://code.google.com/p/rogue-op/wiki/LICENSE>
+//
+// Formatting:
+//	utf-8 ; unix ; 80 cols ; tabwidth 4
+////////////////////////////////////////////////////////////////////////////////
+
 package main
 
 import (
@@ -50,7 +63,7 @@ func main() {
 	fieldstrlist := regexp.MustCompile(",").Split(*fieldnum, -1)
 	fieldindices := make([]int, len(fieldstrlist))
 	for i := 0; i < len(fieldstrlist); i++ {
-		fnum, err := strconv.ParseInt(fieldstrlist[i], 0, 0)	
+		fnum, err := strconv.ParseInt(fieldstrlist[i], 0, 0)
 		fieldindices[i] = int(fnum)
 		if fieldindices[i] < 1 {
 			fmt.Printf("Invalid field number specified: %d\n", fieldindices[i])
@@ -73,7 +86,7 @@ func main() {
 	}
 	linechan <- nil // sync with goroutine
 	if err := scanner.Err(); err != nil {
-		fmt.Fprintln(os.Stderr, "Error: "+ err.Error())
+		fmt.Fprintln(os.Stderr, "Error: "+err.Error())
 		os.Exit(1)
 	}
 }
