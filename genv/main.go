@@ -16,8 +16,9 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
-	//	"os/exec"
+	"os/exec"
 	"sort"
 	"strings"
 )
@@ -30,16 +31,14 @@ func cli_err(msg string) {
 
 type SymTab map[string]string
 
-// this has a potential data race, accessing the env map from a goroutine.
-// right now, only one goroutine accesses it, so it's not an issue.
-func define(defsIn <-chan string, env SymTab) {
-	for def := range defsIn {
+func enmap(kv_strings []string, kv_map SymTab) {
+	for _, def := range kv_strings {
 		kv := strings.Split(def, "=")
 		if len(kv) != 2 {
 			msg := fmt.Sprintf("Invalid variable definition (%s)", def)
 			cli_err(msg)
 		}
-		env[kv[0]] = kv[1]
+		kv_map[kv[0]] = kv[1]
 	}
 }
 
@@ -68,44 +67,42 @@ func main() {
 		return
 	}
 
-	defsChan := make(chan string)
-	env := make(SymTab)
-	go define(defsChan, env)
-
 	// environment vars
+	var env []string
+	kv_map := make(SymTab)
 	if !*ignore {
-		for _, def := range os.Environ() {
-			defsChan <- def
-		}
-		//		fmt.Printf("%d vars in environment:\n", i)
+		env = os.Environ()
 	}
-
-	// vars defined on command line
-	for i, arg := range args {
-		if !strings.Contains(arg, "=") {
-			// slice off tail after var=val pairs
-			args = args[i:]
-			break
+	for len(args) > 0 {
+		arg := args[0]
+		if strings.Index(arg, "=") < 1 {
+			break // not of form "name=val", preserve tail and bail
 		}
-		defsChan <- arg
+		args = args[1:] // pop front
+		env = append(env, arg)
 	}
-	close(defsChan)
+	enmap(env, kv_map)
+	env = []string{}
+	for k, v := range kv_map {
+		env = append(env, fmt.Sprintf("%s=%s", k, v))
+	}
+	sort.Strings(env)
 
 	// list or exec
 	if len(args) == 0 { // null case: print environment
-		// grab a slice of sorted keys so we can print sorted
-		names := make([]string, len(env))
-		i := 0
-		for n := range env {
-			names[i] = n
-			i++
-		}
-		sort.Strings(names)
-		for _, n := range names {
-			fmt.Printf("%s=%s\n", n, env[n])
+		for _, v := range env {
+			fmt.Println(v)
 		}
 	} else { // remaining args: exec util with any args
-
-		// TODO
+		util := exec.Command(args[0])
+		util.Args = args
+		util.Stdin = os.Stdin
+		util.Stdout = os.Stdout
+		util.Stderr = os.Stderr
+		util.Env = env
+		err := util.Run()
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 }
