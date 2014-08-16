@@ -21,6 +21,23 @@ import (
 	"os"
 )
 
+func Init() {
+	usage := flag.Usage
+	flag.Usage = func() {
+		fmt.Println("gwget - automated network fetcher (lite wget clone)")
+		fmt.Println("Synopsis: gwget [OPTION]... [URL]...")
+		usage()
+	}
+}
+
 func main() {
-	// stub
+	var help bool
+	flag.BoolVar(&help, "help", false, "Print a help message, which might be useful")
+	flag.Parse()
+	urls := flag.Args()
+
+	if help {
+		flag.Usage()
+		return
+	}
 }
