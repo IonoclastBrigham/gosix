@@ -1,4 +1,4 @@
-// main.cpp
+// main.go
 // gwget main package
 //
 // Copyright © 2014 Brigham Toskin
@@ -16,9 +16,7 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
-	"net"
-	"os"
+	"gosix/gwget/fetch"
 )
 
 func Init() {
@@ -39,5 +37,18 @@ func main() {
 	if help {
 		flag.Usage()
 		return
+	}
+
+	// TODO: handle other options
+
+	sync_chan := make(chan bool, len(urls))
+	for _, url := range urls {
+		// regular raw download
+		go fetch.Fetch(sync_chan, url)
+	}
+
+	// sync with completed goroutines
+	for i := 0; i < len(urls); i++ {
+		<-sync_chan // ignore result
 	}
 }
